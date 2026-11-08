@@ -1,0 +1,15 @@
+[Unit]
+Description=Shift Handover
+After=network.target
+
+[Service]
+User=ec2-user
+WorkingDirectory=/home/ec2-user/handover-aws
+Environment=PORT=3000
+Environment=HANDOVER_USER=team
+Environment=HANDOVER_PASS=change-this-password
+ExecStart=/usr/bin/node server.js
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

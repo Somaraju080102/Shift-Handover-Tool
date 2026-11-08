@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shift Handover</title>
+<style>
+:root{--bg:#eef2f6;--card:#fff;--ink:#16202c;--mut:#5d6b7a;--line:#d5dde6;--p1:#d6293e;--p2:#e08a00;--p3:#2f7fbf;--ok:#1f9d63;--acc:#16202c;--accink:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e141b;--card:#18212b;--ink:#e6edf4;--mut:#93a1b0;--line:#2a3643;--p1:#ff5468;--p2:#ffa91f;--p3:#5aa9e6;--ok:#38c585;--acc:#e6edf4;--accink:#0e141b;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e141b;--card:#18212b;--ink:#e6edf4;--mut:#93a1b0;--line:#2a3643;--p1:#ff5468;--p2:#ffa91f;--p3:#5aa9e6;--ok:#38c585;--acc:#e6edf4;--accink:#0e141b;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:16px 14px 60px}
+h1{font-size:22px;margin:0 0 2px;letter-spacing:-.01em}
+.sub{color:var(--mut);margin:0 0 14px;font-size:13px}
+.bar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:6px;padding:8px 10px;cursor:pointer;text-align:left;color:var(--ink);font:inherit}
+.stat b{font-size:22px;display:block;line-height:1.1}.stat span{font-size:12px;color:var(--mut)}
+.stat.on{outline:2px solid var(--c)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:14px}
+.panel h2{font-size:15px;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid .full{grid-column:1/-1}
+label{font-size:12px;color:var(--mut);display:block;margin-bottom:2px}
+input,select,textarea{width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--p3);outline-offset:1px}
+textarea{min-height:56px;resize:vertical}
+.btn{background:var(--acc);color:var(--accink);border:0;border-radius:6px;padding:9px 14px;font:inherit;font-weight:600;cursor:pointer}
+.btn.alt{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:500}
+.btn.sm{padding:5px 9px;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.item{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--c);border-radius:6px;padding:10px 12px;margin-bottom:8px}
+.item.P1{--c:var(--p1)}.item.P2{--c:var(--p2)}.item.P3{--c:var(--p3)}
+.top{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.tk{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;font-weight:700}
+.pill{font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--line);color:var(--mut)}
+.pill.w{border-color:var(--p2);color:var(--p2)}.pill.g{border-color:var(--ok);color:var(--ok)}
+.t{font-weight:600;margin:3px 0}
+.meta{font-size:12.5px;color:var(--mut)}
+.next{margin:6px 0;padding:6px 8px;background:var(--bg);border-radius:6px;font-size:14px}
+.sel{max-width:100%;overflow-x:auto}
+#out{width:100%;min-height:200px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+.empty{padding:22px;text-align:center;color:var(--mut);border:1px dashed var(--line);border-radius:8px}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--acc);color:var(--accink);padding:8px 14px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+details{margin-bottom:8px}
+summary{cursor:pointer;list-style:none;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸";color:var(--mut);width:12px}
+details[open]>summary::before{content:"▾"}
+details.mo>summary{font-size:16px;font-weight:700;padding:8px 2px;border-bottom:2px solid var(--line)}
+details.dy>summary{font-weight:600;padding:6px 2px 6px 10px}
+.dy>.in{padding-left:10px}
+.sh{font-size:12.5px;font-weight:600;color:var(--mut);margin:6px 0 4px 2px}
+.cnt{font-size:12.5px;font-weight:400;color:var(--mut)}
+.fl{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:10px 0 0}
+.chat{max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:6px;padding:4px 8px;background:var(--bg);margin-top:8px}
+.msg{padding:6px 0;border-bottom:1px solid var(--line)}.msg:last-child{border-bottom:0}
+.msg.pin{border-left:4px solid var(--p2);padding-left:6px}
+.lk{background:none;border:0;color:var(--mut);cursor:pointer;font:inherit;font-size:12px;padding:0 4px}
+@media (max-width:520px){.grid{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Shift handover</h1>
+<p class="sub">Log it once, the next shift acknowledges it, and old items clear themselves. <span class="pill" id="mode">Starting…</span></p>
+
+<div class="bar" id="stats"></div>
+
+<div class="panel"><h2 style="margin:0">Live chat <span class="cnt">messages clear after 24 hours</span></h2>
+<div id="cm" class="chat" aria-live="polite"></div>
+<div class="row" style="margin-top:8px"><select id="cn" style="width:150px"><option value="">Your name</option></select><input id="ct" placeholder="Type a tip or update" maxlength="500" style="flex:1;min-width:160px"><button class="btn" id="cs">Send</button></div></div>
+
+<div class="panel">
+<h2>Add handover item <span class="pill" id="now"></span></h2>
+<div class="grid">
+<div><label for="tk">Ticket no.</label><input id="tk" placeholder="INC0012345"></div>
+<div><label for="pr">Priority</label><select id="pr"><option>P1</option><option selected>P2</option><option>P3</option></select></div>
+<div class="full"><label for="ti">What’s the issue?</label><input id="ti" placeholder="NetBackup job failed twice on prod-db-02"></div>
+<div><label for="st">Status</label><select id="st"><option>Open</option><option>Monitoring</option><option>Waiting on client</option><option>Waiting on vendor</option><option>Resolved</option></select></div>
+<div><label for="ow">Owner (required)</label><select id="ow"><option value="">Select owner</option></select></div>
+<div class="full"><label for="nx">Next action for incoming shift</label><textarea id="nx" placeholder="Re-run job at 03:00 IST, update the ticket if it fails again"></textarea></div>
+</div>
+<div class="row" style="margin-top:10px"><button class="btn" id="add">Add item</button><span class="meta" id="err" style="color:var(--p1)"></span></div>
+</div>
+
+<div class="panel">
+<div class="row" style="justify-content:space-between"><h2 style="margin:0">Handover log</h2><button class="btn alt sm" id="hideRes">Hide resolved</button></div>
+<div class="fl">
+<div><label for="q">Search</label><input id="q" placeholder="Ticket or text"></div>
+<div><label for="fm">Month</label><select id="fm"><option value="">All months</option></select></div>
+<div><label for="fs">Shift</label><select id="fs"><option value="">All shifts</option><option value="A">A (06:30 to 14:30)</option><option value="B">B (14:30 to 22:30)</option><option value="C">C (22:30 to 06:30)</option></select></div>
+<div><label for="fo">Owner</label><select id="fo"><option value="">All owners</option></select></div>
+<div><label for="ft">Status</label><select id="ft"><option value="">Any status</option><option>Open</option><option>Monitoring</option><option>Waiting on client</option><option>Waiting on vendor</option><option>Resolved</option></select></div>
+</div>
+<div class="row" style="margin:8px 0"><button class="btn alt sm" id="clr">Clear filters</button><span class="meta" id="found"></span></div>
+<div id="list" style="margin-top:10px"></div>
+</div>
+
+<div class="panel">
+<h2>Shift summary</h2>
+<div class="grid">
+<div><label for="from">Outgoing</label><input id="from" placeholder="Your name"></div>
+<div><label for="shift">Shift</label><select id="shift"><option>Shift A (06:30 to 14:30)</option><option>Shift B (14:30 to 22:30)</option><option>Shift C (22:30 to 06:30)</option></select></div>
+</div>
+<div class="row" style="margin:10px 0"><button class="btn" id="gen">Generate summary</button><button class="btn alt" id="copy">Copy</button></div>
+<textarea id="out" readonly placeholder="Click Generate summary, then paste it into Teams or email."></textarea>
+</div>
+
+<div class="panel"><h2>Team members</h2>
+<p class="meta" style="margin-top:0">These names fill the Owner dropdown. Anyone with edit access can change this list. Removing a name keeps their old items.</p>
+<div class="row"><input id="tn" placeholder="Add a name" style="max-width:220px"><button class="btn alt sm" id="tadd">Add</button></div>
+<div id="tl" class="row" style="margin-top:8px"></div></div>
+
+<div class="panel">
+<h2>Retention policy</h2>
+<p class="meta" style="margin-top:0">Items are deleted automatically once they pass these limits. It runs whenever someone opens the page.</p>
+<div class="grid" style="grid-template-columns:repeat(3,1fr)">
+<div><label for="r1">P1 keep (days)</label><input id="r1" type="number" min="1"></div>
+<div><label for="r2">P2 keep (days)</label><input id="r2" type="number" min="1"></div>
+<div><label for="r3">P3 keep (days)</label><input id="r3" type="number" min="1"></div>
+</div>
+<div class="row" style="margin-top:10px"><button class="btn alt sm" id="theme">Switch theme</button></div>
+<p class="meta">Everyone who opens this server’s address sees the same live list. Data is stored on your own server.</p>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+var D=86400000,S={open:{},team:[],chat:[],items:[],ret:{P1:365,P2:90,P3:30},filter:null,hideRes:false},store=null,purged=false;
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function toast(m){var t=$("toast");t.textContent=m;t.className="toast show";setTimeout(function(){t.className="toast"},2200)}
+function status(t,c){var e=$("mode");e.textContent=t;e.className="pill "+(c||"")}
+function age(ms){var m=Math.floor(ms/60000);if(m<60)return m+"m ago";var h=Math.floor(m/60);if(h<48)return h+"h ago";return Math.floor(h/24)+"d ago"}
+function expired(i){return Date.now()-i.created>=S.ret[i.pr]*D}
+function left(i){var d=Math.ceil((i.created+S.ret[i.pr]*D-Date.now())/D);return d<=1?"clears today":"clears in "+d+"d"}
+function fail(){toast("Couldn’t save. Check your connection and try again.")}
+/* storage adapters */
+function localStore(){
+ var K="handover:v1",CK="handover:chat";try{S.chat=JSON.parse(localStorage.getItem(CK)||"[]").filter(function(m){return Date.now()-m.at<D})}catch(e){S.chat=[]}
+ function saveC(){try{localStorage.setItem(CK,JSON.stringify(S.chat))}catch(e){}}
+ try{var r=JSON.parse(localStorage.getItem(K)||"null");if(r&&r.items){S.items=r.items;S.ret=r.ret||S.ret;S.team=r.team||[]}}catch(e){}
+ function save(){try{localStorage.setItem(K,JSON.stringify({items:S.items,ret:S.ret,team:S.team}))}catch(e){}}
+ var n=S.items.length;S.items=S.items.filter(function(i){return !expired(i)});if(S.items.length<n){save();toast((n-S.items.length)+" old item(s) cleared")}
+ return{add:function(it){it.id="i"+Date.now()+Math.floor(Math.random()*999);S.items.push(it);save();render()},
+  patch:function(id,f){S.items.forEach(function(i){if(i.id===id)Object.assign(i,f)});save();render()},
+  del:function(id){S.items=S.items.filter(function(i){return i.id!==id});save();render()},
+  setTeam:function(t){S.team=t;save();render()},
+  chatAdd:function(m){m.id="c"+Date.now()+Math.floor(Math.random()*999);S.chat.push(m);saveC();renderChat()},
+  chatPatch:function(id,f){S.chat.forEach(function(m){if(m.id===id)Object.assign(m,f)});saveC();renderChat()},
+  chatDel:function(id){S.chat=S.chat.filter(function(m){return m.id!==id});saveC();renderChat()},
+  setRet:function(r){S.ret=r;var n=S.items.length;S.items=S.items.filter(function(i){return !expired(i)});save();render();if(S.items.length<n)toast("Old items cleared")}}}
+function apiStore(){
+ var rev=-1,busy=false;
+ function call(m,u,b){return fetch(u,{method:m,headers:{"Content-Type":"application/json"},body:b?JSON.stringify(b):undefined}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})}
+ function apply(d){rev=d.rev;S.items=d.items;S.chat=d.chat;S.team=d.team;S.ret=Object.assign(S.ret,d.ret);fillRet();render()}
+ function pull(){if(busy)return;busy=true;call("GET","/api/state?rev="+rev).then(function(d){busy=false;status("Shared · live","g");if(!d.same)apply(d)}).catch(function(){busy=false;status("Can’t reach server","w")})}
+ function push(m,u,b){return call(m,u,b).then(apply).catch(fail)}
+ setInterval(pull,4000);pull();
+ return{add:function(it){push("POST","/api/items",it)},patch:function(id,f){push("PATCH","/api/items/"+id,f)},del:function(id){push("DELETE","/api/items/"+id)},
+  setRet:function(r){push("PUT","/api/ret",r)},setTeam:function(t){push("PUT","/api/team",{names:t})},
+  chatAdd:function(m){push("POST","/api/chat",m)},chatPatch:function(id,f){push("PATCH","/api/chat/"+id,{pin:!!f.pin})},chatDel:function(id){push("DELETE","/api/chat/"+id)}}}
+/* ui */
+function stats(){var h="";["P1","P2","P3"].forEach(function(p){var c=S.items.filter(function(i){return i.pr===p&&i.st!=="Resolved"}).length;h+='<button class="stat'+(S.filter===p?" on":"")+'" data-p="'+p+'" style="--c:var(--'+p.toLowerCase()+')"><b>'+c+'</b><span>'+p+' open</span></button>'});$("stats").innerHTML=h}
+var SH={A:"Shift A (06:30 to 14:30)",B:"Shift B (14:30 to 22:30)",C:"Shift C (22:30 to 06:30)"};
+function p2(n){return(n<10?"0":"")+n}
+function shiftInfo(ts){var d=new Date(ts),m=d.getHours()*60+d.getMinutes(),s;
+ if(m<390){s="C";d=new Date(ts-D)}else if(m<870)s="A";else if(m<1350)s="B";else s="C";
+ return{s:s,day:d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())}}
+function dayLabel(k){return new Date(k+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}
+function monLabel(k){return new Date(k+"-15T12:00:00").toLocaleDateString("en-GB",{month:"long",year:"numeric"})}
+function clock(ts){var d=new Date(ts);return p2(d.getHours())+":"+p2(d.getMinutes())}
+function cnt(L){var c={P1:0,P2:0,P3:0};L.forEach(function(i){c[i.pr]++});return L.length+" item"+(L.length>1?"s":"")+(c.P1?" · "+c.P1+" P1":"")+(c.P2?" · "+c.P2+" P2":"")+(c.P3?" · "+c.P3+" P3":"")}
+function card(i){
+ var ack=i.ack?'<span class="pill g">Acknowledged by '+esc(i.ack.by)+' '+age(Date.now()-i.ack.at)+'</span>':'<span class="pill w">Not acknowledged</span>';
+ return '<div class="item '+i.pr+'"><div class="top"><span class="tk">'+esc(i.tk||"No ticket")+'</span><span class="pill">'+i.pr+'</span><span class="pill">'+esc(i.st)+'</span>'+ack+'</div>'
+ +'<div class="t">'+esc(i.ti)+'</div>'
+ +(i.nx?'<div class="next"><b>Next:</b> '+esc(i.nx)+'</div>':'')
+ +'<div class="meta">Owner: '+esc(i.ow||"unassigned")+' · added '+clock(i.created)+' ('+age(Date.now()-i.created)+') · '+left(i)+'</div>'
+ +'<div class="row" style="margin-top:8px">'+(i.ack?'':'<button class="btn sm" data-a="ack" data-id="'+i.id+'">Acknowledge</button>')
+ +(i.st!=="Resolved"?'<button class="btn alt sm" data-a="res" data-id="'+i.id+'">Mark resolved</button>':'')
+ +'<button class="btn alt sm" data-a="del" data-id="'+i.id+'">Delete</button></div></div>'}
+function isOpen(k,def){return S.open[k]!==undefined?S.open[k]:def}
+function render(){
+ stats();
+ var live=S.items.filter(function(i){return !expired(i)}).map(function(i){return Object.assign({},i,{_i:shiftInfo(i.created)})});
+ var fm=$("fm"),keep=fm.value,mons={};live.forEach(function(i){mons[i._i.day.slice(0,7)]=1});
+ var mk=Object.keys(mons).sort().reverse();
+ fm.innerHTML='<option value="">All months</option>'+mk.map(function(k){return '<option value="'+k+'">'+monLabel(k)+'</option>'}).join("");
+ fm.value=mons[keep]?keep:"";
+ var fo=$("fo"),ko=fo.value,ow={};live.forEach(function(i){var n=(i.ow||"").trim()||"(unassigned)";var k=n.toLowerCase();if(!ow[k])ow[k]=n});
+ S.team.forEach(function(n){var k=n.toLowerCase();if(!ow[k])ow[k]=n});
+ var ok=Object.keys(ow).sort();
+ fo.innerHTML='<option value="">All owners</option>'+ok.map(function(k){return '<option value="'+esc(k)+'">'+esc(ow[k])+'</option>'}).join("");
+ fo.value=ow[ko]?ko:"";
+ var os=$("ow"),cur=os.value||ownPref();
+ os.innerHTML='<option value="">'+(S.team.length?"Select owner":"Add team names below first")+'</option>'+S.team.map(function(n){return '<option value="'+esc(n)+'">'+esc(n)+'</option>'}).join("");
+ os.value=S.team.indexOf(cur)>-1?cur:"";
+ renderChat();
+ $("tl").innerHTML=S.team.map(function(n,k){return '<span class="pill">'+esc(n)+' <a href="#" data-t="'+k+'" style="color:var(--p1);text-decoration:none" aria-label="Remove '+esc(n)+'">✕</a></span>'}).join("")||'<span class="meta">No names yet.</span>';
+ var q=$("q").value.toLowerCase(),fs=$("fs").value,ft=$("ft").value,fmv=fm.value,fov=fo.value;
+ var filtering=!!(q||fs||ft||fmv||fov||S.filter);
+ var L=live.filter(function(i){
+  if(S.filter&&i.pr!==S.filter)return false;if(S.hideRes&&i.st==="Resolved")return false;
+  if(fmv&&i._i.day.slice(0,7)!==fmv)return false;if(fs&&i._i.s!==fs)return false;if(ft&&i.st!==ft)return false;if(fov&&((i.ow||"").trim().toLowerCase()||"(unassigned)")!==fov)return false;
+  if(q&&((i.tk||"")+" "+i.ti+" "+(i.nx||"")+" "+(i.ow||"")).toLowerCase().indexOf(q)<0)return false;return true});
+ $("found").textContent=L.length+" of "+live.length+" items shown";
+ if(!L.length){$("list").innerHTML='<div class="empty">'+(live.length?'Nothing matches these filters.':'Nothing here yet. Add the first item above.')+'</div>';return}
+ var rank={P1:0,P2:1,P3:2},M={};
+ L.forEach(function(i){var m=i._i.day.slice(0,7),d=i._i.day;((M[m]=M[m]||{})[d]=M[m][d]||{});(M[m][d][i._i.s]=M[m][d][i._i.s]||[]).push(i)});
+ var now=shiftInfo(Date.now()),html="";
+ Object.keys(M).sort().reverse().forEach(function(m){
+  var all=[];Object.keys(M[m]).forEach(function(d){Object.keys(M[m][d]).forEach(function(s){all=all.concat(M[m][d][s])})});
+  var mo=isOpen("m"+m,filtering||m===now.day.slice(0,7));
+  html+='<details class="mo" data-k="m'+m+'"'+(mo?" open":"")+'><summary>'+monLabel(m)+' <span class="cnt">'+cnt(all)+'</span></summary>';
+  Object.keys(M[m]).sort().reverse().forEach(function(d){
+   var dl=[];Object.keys(M[m][d]).forEach(function(s){dl=dl.concat(M[m][d][s])});
+   var dopen=isOpen("d"+d,filtering||d===now.day);
+   html+='<details class="dy" data-k="d'+d+'"'+(dopen?" open":"")+'><summary>'+dayLabel(d)+(d===now.day?" (today’s shift day)":"")+' <span class="cnt">'+cnt(dl)+'</span></summary><div class="in">';
+   ["C","B","A"].forEach(function(s){var items=M[m][d][s];if(!items)return;
+    items.sort(function(a,b){return rank[a.pr]-rank[b.pr]||b.created-a.created});
+    html+='<div class="sh">'+SH[s]+'</div>'+items.map(card).join("")});
+   html+='</div></details>'});
+  html+='</details>'});
+ $("list").innerHTML=html}
+function fillRet(){$("r1").value=S.ret.P1;$("r2").value=S.ret.P2;$("r3").value=S.ret.P3}
+function summary(){
+ var d=new Date(),open=S.items.filter(function(i){return i.st!=="Resolved"&&!expired(i)});
+ var t="SHIFT HANDOVER - "+d.toDateString()+"\n"+$("shift").value+"\nOutgoing: "+($("from").value||"-")+"\n";
+ ["P1","P2","P3"].forEach(function(p){
+  var L=open.filter(function(i){return i.pr===p}).sort(function(a,b){return b.created-a.created});
+  t+="\n"+p+" ("+L.length+")\n";
+  if(!L.length){t+="  none\n";return}
+  L.forEach(function(i){t+="  - "+(i.tk||"no ticket")+" | "+i.ti+" | "+i.st+" | owner: "+(i.ow||"-")+"\n"+(i.nx?"    next: "+i.nx+"\n":"")});
+ });
+ t+="\n"+open.filter(function(i){return !i.ack}).length+" item(s) still need acknowledgement.";
+ $("out").value=t}
+function copy(){var o=$("out");if(!o.value)summary();o.select();var ok=false;try{ok=document.execCommand("copy")}catch(e){}
+ if(!ok&&navigator.clipboard){navigator.clipboard.writeText(o.value).then(function(){toast("Copied")},function(){toast("Select the text and copy it")});return}
+ toast(ok?"Copied":"Select the text and copy it")}
+function add(){
+ var ti=$("ti").value.trim();if(!ti){$("err").textContent="Add a short description of the issue.";return}if(!$("ow").value.trim()){$("err").textContent="Add the owner name before saving.";$("ow").focus();return}$("err").textContent="";
+ store.add({tk:$("tk").value.trim().toUpperCase(),pr:$("pr").value,ti:ti,st:$("st").value,ow:$("ow").value.trim(),nx:$("nx").value.trim(),created:Date.now(),ack:null});
+ ["tk","ti","nx"].forEach(function(i){$(i).value=""});try{localStorage.setItem("handover:owner",$("ow").value.trim())}catch(e){}toast("Item added")}
+function ownPref(){try{return localStorage.getItem("handover:owner")||""}catch(e){return ""}}
+function myName(){var n="";try{n=localStorage.getItem("handover:name")||""}catch(e){}
+ n=prompt("Your name (incoming shift):",n);if(n){try{localStorage.setItem("handover:name",n)}catch(e){}}return n}
+document.addEventListener("click",function(e){
+ var b=e.target.closest("[data-a],[data-p],[data-t],[data-c]");if(!b)return;
+ if(b.dataset.c){var cm=S.chat.filter(function(m){return m.id===b.dataset.id})[0];if(cm){if(b.dataset.c==="pin")store.chatPatch(cm.id,{pin:!cm.pin});else if(confirm("Delete this message for everyone?"))store.chatDel(cm.id)}return}
+ if(b.dataset.t!==undefined){e.preventDefault();var t=S.team.slice(),nm=t.splice(+b.dataset.t,1)[0];if(confirm("Remove "+nm+" from the team list? Their old items stay."))store.setTeam(t);return}
+ if(b.dataset.p){S.filter=S.filter===b.dataset.p?null:b.dataset.p;render();return}
+ var id=b.dataset.id,a=b.dataset.a;
+ if(a==="ack"){var w=myName();if(w)store.patch(id,{ack:{by:w,at:Date.now()}})}
+ if(a==="res")store.patch(id,{st:"Resolved"});
+ if(a==="del"&&confirm("Delete this item for everyone?"))store.del(id)});
+document.addEventListener("toggle",function(e){var k=e.target&&e.target.dataset&&e.target.dataset.k;if(k)S.open[k]=e.target.open},true);
+["fm","fs","ft","fo"].forEach(function(id){$(id).onchange=render});
+$("clr").onclick=function(){$("q").value="";$("fo").value="";$("fm").value="";$("fs").value="";$("ft").value="";S.filter=null;render()};
+function nowTag(){var n=shiftInfo(Date.now());$("now").textContent="Logging to "+SH[n.s].split(" (")[0]+" · "+dayLabel(n.day)}
+function renderChat(){
+ var cn=$("cn"),cur=cn.value||ownPref();
+ cn.innerHTML='<option value="">Your name</option>'+S.team.map(function(n){return '<option value="'+esc(n)+'">'+esc(n)+'</option>'}).join("");
+ cn.value=S.team.indexOf(cur)>-1?cur:"";
+ var L=S.chat.filter(function(m){return Date.now()-m.at<D}),box=$("cm"),near=box.scrollHeight-box.scrollTop-box.clientHeight<40||!box.innerHTML;
+ var pins=L.filter(function(m){return m.pin}).sort(function(a,b){return a.at-b.at}),rest=L.filter(function(m){return !m.pin}).sort(function(a,b){return a.at-b.at});
+ function row(m){var y=new Date(m.at).getDate()!==new Date().getDate()?"yesterday ":"";return '<div class="msg'+(m.pin?' pin':'')+'"><b>'+esc(m.name)+'</b> <span class="meta">'+y+clock(m.at)+'</span> <button class="lk" data-c="pin" data-id="'+m.id+'">'+(m.pin?'Unpin':'📌 Pin')+'</button><button class="lk" data-c="del" data-id="'+m.id+'" aria-label="Delete message">✕</button><div>'+esc(m.text)+'</div></div>'}
+ box.innerHTML=L.length?pins.map(row).join("")+rest.map(row).join(""):'<div class="meta">No messages yet. Tips from the last 24 hours show here.</div>';
+ if(near)box.scrollTop=box.scrollHeight}
+function send(){var n=$("cn").value,t=$("ct").value.trim();if(!n){toast("Pick your name first");return}if(!t)return;store.chatAdd({name:n,text:t.slice(0,500),at:Date.now(),pin:false});$("ct").value="";try{localStorage.setItem("handover:owner",n)}catch(e){}}
+function addName(){var v=$("tn").value.trim();if(!v)return;if(S.team.some(function(n){return n.toLowerCase()===v.toLowerCase()})){toast("Already in the list");return}store.setTeam(S.team.concat([v]).sort(function(a,b){return a.localeCompare(b)}));$("tn").value=""}
+$("tadd").onclick=addName;$("cs").onclick=send;$("ct").onkeydown=function(e){if(e.key==="Enter")send()};$("tn").onkeydown=function(e){if(e.key==="Enter")addName()};
+$("add").onclick=add;$("gen").onclick=summary;$("copy").onclick=copy;$("q").oninput=render;
+$("hideRes").onclick=function(){S.hideRes=!S.hideRes;this.textContent=S.hideRes?"Show resolved":"Hide resolved";render()};
+$("theme").onclick=function(){var r=document.documentElement,dark=r.dataset.theme==="dark"||(!r.dataset.theme&&matchMedia("(prefers-color-scheme:dark)").matches);r.dataset.theme=dark?"light":"dark"};
+["r1","r2","r3"].forEach(function(id,k){var p="P"+(k+1);$(id).onchange=function(){var v=Math.max(1,parseInt(this.value)||S.ret[p]);var r=Object.assign({},S.ret);r[p]=v;this.value=v;store.setRet(r)}});
+/* start: local first so the page works at once, shared lights up when available */
+store=localStore();fillRet();render();nowTag();try{$("ow").value=localStorage.getItem("handover:owner")||""}catch(e){}$("shift").value=SH[shiftInfo(Date.now()).s];status("This browser only","w");
+S.items=[];S.chat=[];store=apiStore();status("Connecting…","")
+})();
+</script>
+</body>
+</html>
